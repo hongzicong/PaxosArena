@@ -3,6 +3,7 @@ package config
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -87,26 +88,31 @@ type Config struct {
 	// -- client info --
 	// number of client requests
 	Reqs int
-	// duration during which a client run
-	RunTime time.Duration
+	// warm-up period excluded from latency measurements
+	Warmup time.Duration
+	// duration of the measured request window
+	Duration time.Duration
+	// number of complete experiment repetitions
+	Repetitions int
 	// ratio of writes
 	Writes int
-	// conflict ratio
-	Conflicts int
 	// the size of payload
 	CommandSize int
 	// number of clones of each client
 	Clones int
 	// wait reply from the closest replica
 	WaitClosest bool
-	Pipeline    bool
+	// average number of requests generated per second by each logical client
+	ArrivalRate float64
+	// number of keys accessed by the client workload
+	KeyCount int
+	// exponent of the Zipfian key-access distribution
+	ZipfSkew float64
+	Pipeline bool
 	// when pipelining the frequency of syncs
 	Syncs int
 	// when pipelining the maximal number of pending commands
 	Pendings int
-	// Hot key for this set of clients
-	Key int
-
 	// quorum config file
 	Quorum string
 
@@ -122,6 +128,10 @@ func Read(filename, alias string) (*Config, error) {
 		ReplicaAddrs: make(map[string]string),
 		Alias:        alias,
 		Port:         defaultPort,
+		ArrivalRate:  5,
+		KeyCount:     1_000_000,
+		ZipfSkew:     0.9,
+		Repetitions:  1,
 	}
 
 	f, err := os.Open(filename)
@@ -195,9 +205,6 @@ func Read(filename, alias string) (*Config, error) {
 			case "writes":
 				c.Writes, err = expectInt(words)
 				ok = true
-			case "conflicts":
-				c.Conflicts, err = expectInt(words)
-				ok = true
 			case "commandSize":
 				c.CommandSize, err = expectInt(words)
 				ok = true
@@ -207,8 +214,14 @@ func Read(filename, alias string) (*Config, error) {
 			case "protocol":
 				c.Protocol, err = expectString(words)
 				ok = true
-			case "runtime":
-				c.RunTime, err = expectDuration(words)
+			case "warmup":
+				c.Warmup, err = expectDuration(words)
+				ok = true
+			case "runtime", "duration":
+				c.Duration, err = expectDuration(words)
+				ok = true
+			case "repetitions":
+				c.Repetitions, err = expectInt(words)
 				ok = true
 			case "noop":
 				c.Noop, err = expectBool(words)
@@ -238,11 +251,17 @@ func Read(filename, alias string) (*Config, error) {
 			case "pipeline":
 				c.Pipeline, err = expectBool(words)
 				ok = true
+			case "arrivalrate":
+				c.ArrivalRate, err = expectFloat(words)
+				ok = true
+			case "keycount":
+				c.KeyCount, err = expectInt(words)
+				ok = true
+			case "zipfskew":
+				c.ZipfSkew, err = expectFloat(words)
+				ok = true
 			case "pendings":
 				c.Pendings, err = expectInt(words)
-				ok = true
-			case "key":
-				c.Key, err = expectInt(words)
 				ok = true
 			case "commandsize":
 				c.CommandSize, err = expectInt(words)
@@ -273,6 +292,31 @@ func Read(filename, alias string) (*Config, error) {
 		}
 	}
 
+	if c.ArrivalRate <= 0 || math.IsNaN(c.ArrivalRate) || math.IsInf(c.ArrivalRate, 0) {
+		return c, Err("arrivalRate", "must be finite and greater than zero")
+	}
+	if c.KeyCount <= 0 {
+		return c, Err("keyCount", "must be greater than zero")
+	}
+	if c.ZipfSkew < 0 || math.IsNaN(c.ZipfSkew) || math.IsInf(c.ZipfSkew, 0) {
+		return c, Err("zipfSkew", "must be finite and non-negative")
+	}
+	if c.Warmup < 0 {
+		return c, Err("warmup", "must be non-negative")
+	}
+	if c.Duration < 0 {
+		return c, Err("duration", "must be non-negative")
+	}
+	if c.Duration == 0 && c.Reqs <= 0 {
+		return c, Err("reqs", "must be greater than zero when duration is not set")
+	}
+	if c.Duration == 0 && c.Warmup > 0 {
+		return c, Err("warmup", "requires a positive duration")
+	}
+	if c.Repetitions <= 0 {
+		return c, Err("repetitions", "must be greater than zero")
+	}
+
 	return c, nil
 }
 
@@ -290,6 +334,12 @@ func (c *Config) MapReplicaToIP(replica, ip string) {
 
 func expectInt(ws []string) (int, error) {
 	return expect(ws, strconv.Atoi, 0)
+}
+
+func expectFloat(ws []string) (float64, error) {
+	return expect(ws, func(s string) (float64, error) {
+		return strconv.ParseFloat(s, 64)
+	}, 0)
 }
 
 func expectString(ws []string) (string, error) {
@@ -312,7 +362,7 @@ func expectDuration(ws []string) (time.Duration, error) {
 }
 
 type expectRet interface {
-	int | string | bool | time.Duration
+	int | float64 | string | bool | time.Duration
 }
 
 func expect[R expectRet](ws []string, f func(string) (R, error), none R) (R, error) {

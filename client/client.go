@@ -353,7 +353,7 @@ func (c *Client) findClosest(alive []bool) error {
 			addr = "127.0.0.1"
 		}
 
-		if addr == c.server {
+		if c.replicas[i] == c.server || (!hasPort(c.server) && addr == c.server) {
 			c.ClosestId = i
 		}
 
@@ -379,6 +379,11 @@ func (c *Client) findClosest(alive []bool) error {
 	}
 
 	return nil
+}
+
+func hasPort(endpoint string) bool {
+	_, _, err := net.SplitHostPort(endpoint)
+	return err == nil
 }
 
 func (c *Client) call(r *rpc.Client, method string, args, reply interface{}) error {

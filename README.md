@@ -1,86 +1,251 @@
-SwiftPaxos: Fast Geo-Replicated State Machines
-==========
-[![Go Report Card](https://goreportcard.com/badge/github.com/imdea-software/swiftpaxos)](https://goreportcard.com/report/github.com/imdea-software/swiftpaxos)
+# PaxosArena
 
-This repository contains the prototype implementation of SwiftPaxos, a new state-machine replication protocol for geo-distributed systems.
-SwiftPaxos is a _faster Paxos without compromises_.
-In the best case, it executes a state-machine command in two message delays (one round-trip), and three otherwise.
-SwiftPaxos was [presented](https://www.usenix.org/conference/nsdi24/presentation/ryabinin) at the 21st USENIX Symposium on Networked Systems Design and Implementation ([NSDI '24](https://www.usenix.org/conference/nsdi24)).
+PaxosArena is an experimental framework for running and comparing
+Paxos-family state-machine replication protocols. It provides a common master,
+replica, client, workload, latency-injection, quorum, and result-analysis path
+for local or multi-node experiments.
 
-Installation
-------------
+The repository includes the prototype implementation of the SwiftPaxos
+protocol presented at [NSDI '24](https://www.usenix.org/conference/nsdi24/presentation/ryabinin),
+alongside several related protocols. PaxosArena is based on the original
+[SwiftPaxos codebase](https://github.com/imdea-software/swiftpaxos) and the
+[Egalitarian Paxos codebase](https://github.com/otrack/epaxos).
 
-    git clone https://github.com/imdea-software/swiftpaxos.git
-    cd swiftpaxos
-    go install github.com/imdea-software/swiftpaxos
+## Implemented protocols
 
-Implemented protocols
----------------------
+| Protocol | Notes |
+| --- | --- |
+| SwiftPaxos | Geo-replicated protocol described in the NSDI '24 paper. |
+| Paxos | Classic leader-based Paxos. |
+| N²Paxos | All-to-all Paxos variant. |
+| CURP | CURP implemented over N²Paxos. |
+| Fast Paxos | Fast Paxos with uncoordinated collision recovery. |
+| EPaxos | Corrected EPaxos implementation. |
 
-|  Protocol               | Comments                                          |
-|-------------------------|---------------------------------------------------|
-| SwiftPaxos              | See our NSDI'24 [paper](https://www.usenix.org/conference/nsdi24/presentation/ryabinin) for the full details.|
-| Paxos                   | The classic Paxos protocol.                       |
-| N<sup>2</sup>Paxos      | All-to-all variant of Paxos.                      |
-| CURP                    | CURP implemented over N<sup>2</sup>Paxos.         |
-| Fast Paxos              | Fast Paxos with uncoordinated collision recovery. |
-| EPaxos                  | A [corrected][epaxos_correct] version of EPaxos.  |
+## Requirements
 
-This software is based on the [Egalitarian Paxos](https://github.com/otrack/epaxos) code base, as well as the corrections made [here](https://github.com/otrack/epaxos).
+- Go 1.20 or newer for building.
+- Linux for running the generated cluster binary.
+- The system `ping` command on experiment nodes.
+- Slurm commands when using the SCITAS deployment.
 
-Usage
------
-#### participants
-There are three types of participants: *master*, *servers* and *clients*. 
-The servers and clients implement the protocol logic. 
-The master maintains the configuration of the system.
+The project builds with `CGO_ENABLED=0`, so the Linux artifact is a standalone
+executable and does not require a container runtime.
 
-#### deployment configuration
-To setup a run, the participants read deployment configuration file. 
-See [aws.conf][config] for an example of configuration file for AWS EC2.
+## Build
 
-#### launching a participant
+Clone and build for the current platform:
 
-Master:
-    
-    swiftpaxos -run master -config conf.conf
+```bash
+git clone https://github.com/hongzicong/PaxosArena.git
+cd PaxosArena
+go build -trimpath -o paxosarena .
+```
 
-Server:
+To cross-compile the Linux x86-64 binary from Windows PowerShell:
 
-    swiftpaxos -run server -config conf.conf -alias server_name
+```powershell
+powershell -ExecutionPolicy Bypass -File .\slurm\build-linux.ps1
+```
 
-Client:
+This creates `paxosarena-linux-amd64` in the repository root and restores the
+previous Go environment variables after the build.
 
-    swiftpaxos -run client -config conf.conf -alias client_name
+## Architecture
 
-#### command line options
+An experiment contains three participant types:
 
-    -alias alias
-        An alias of this participant
-    -config file
-        Deployment config file (required)
-    -latency file
-        Latency config file
-    -log file
-        Path to the log file
-    -protocol protocol
-        Protocol to run. Overwrites protocol field of the config file
-    -quorum file
-        Quorum config file
-    -run participant
-        Run a participant
+- **Master:** registers replicas and publishes membership information.
+- **Replica:** runs the selected consensus protocol and state machine.
+- **Client:** generates requests and records completion latency.
 
-See [quorum.conf][quorum] and [latency.conf][latency] for an example of quorum and latency configuration files.
+Launch participants with a deployment configuration:
 
-Flint
------
+```bash
+./paxosarena -run master -config deployment.conf -alias m0
 
-To have an idea on how different replication protocols would compare, we wrote a tool named [Flint][flint]. 
-Flint takes as input a set of AWS regions.
-It computes the expected latencies and estimates how the protocols perform in such a deployment.
+./paxosarena -run replica -config deployment.conf \
+  -latency latency.conf -quorum quorum.conf -alias replica-name
 
-[config]: aws.conf
-[epaxos_correct]: https://github.com/otrack/on-epaxos-correctness
-[quorum]: quorum.conf
-[latency]: latency.conf
-[flint]: https://github.com/vonaka/flint
+./paxosarena -run client -config deployment.conf \
+  -latency latency.conf -alias client-name
+```
+
+Important command-line options:
+
+| Option | Meaning |
+| --- | --- |
+| `-alias` | Participant alias from the deployment configuration. |
+| `-config` | Deployment and workload configuration file. |
+| `-latency` | Artificial network-latency matrix. |
+| `-log` | Application log path. |
+| `-protocol` | Override the protocol selected in the configuration. |
+| `-quorum` | Custom quorum configuration. |
+| `-run` | Participant type: `master`, `replica`, or `client`. |
+
+## Select a protocol
+
+PaxosArena accepts these case-insensitive protocol values:
+
+| Configuration value | Protocol |
+| --- | --- |
+| `SwiftPaxos` | SwiftPaxos |
+| `CURP` | CURP |
+| `FastPaxos` | Fast Paxos |
+| `N2Paxos` | N²Paxos |
+| `Paxos` | Classic Paxos |
+| `EPaxos` | EPaxos |
+
+For repeated runs, change the default in `slurm/workload.conf`:
+
+```text
+protocol: EPaxos
+```
+
+For a single Slurm run, leave the file unchanged and export an override:
+
+```bash
+sbatch --account=dcl \
+  --export=ALL,PAXOSARENA_PROTOCOL=epaxos \
+  slurm/run-latency.sbatch
+```
+
+The Slurm launcher writes the override into the generated `cluster.conf` used
+by the master, all five replicas, and all ten clients. Direct participant runs
+can use `-protocol epaxos` on every process instead.
+
+## Workload and network model
+
+The SCITAS experiment uses these configuration files:
+
+- `slurm/workload.conf`: five replicas, ten regional clients, protocol and
+  workload parameters.
+- `latency.conf`: a 15-endpoint, 225-entry round-trip latency matrix.
+- `quorum.conf`: the custom C2 quorum definition.
+
+The workload is open-loop. Each logical client generates requests according to
+a Poisson process. Keys are selected with a Zipfian distribution.
+
+Default workload values:
+
+```text
+reqs: 0
+writes: 100
+commandSize: 1000
+clones: 0
+arrivalRate: 50
+warmup: 15s
+duration: 60s
+repetitions: 5
+keyCount: 1000000
+zipfSkew: 0.9
+```
+
+When `duration` is greater than zero, the client uses timed mode and ignores
+`reqs`. Every repetition generates warm-up traffic for 15 seconds without
+recording latency, records requests generated during the following 60 seconds,
+and then waits for all in-flight replies. The Slurm job restarts the master,
+replicas, and clients before each of the five repetitions.
+
+The Slurm launcher discovers the physical node addresses and rewrites the
+logical endpoints before starting the processes. Replica ports `7070` through
+`7074` are network listeners. Client ports `17000` through `17009` are logical
+latency identities only.
+
+## SCITAS Jed experiment
+
+The provided Slurm job runs a native Linux binary on two Jed CPU nodes:
+
+- 16 Slurm tasks: five replicas, ten clients, and one master.
+- Eight tasks per node.
+- Eight CPU cores and 1 GiB per allocated core for each task.
+- 128 allocated CPU cores in total.
+- `standard` partition and `parallel` QOS.
+
+### Upload the runtime files
+
+Connect to the EPFL VPN when outside the EPFL network. From the repository
+directory in Windows PowerShell:
+
+```powershell
+ssh zihong@jed.hpc.epfl.ch "mkdir -p ~/PaxosArena"
+scp paxosarena-linux-amd64 latency.conf quorum.conf zihong@jed.hpc.epfl.ch:~/PaxosArena/
+scp -r slurm zihong@jed.hpc.epfl.ch:~/PaxosArena/
+ssh zihong@jed.hpc.epfl.ch
+```
+
+Prepare and verify the binary on Jed:
+
+```bash
+cd ~/PaxosArena
+chmod +x paxosarena-linux-amd64
+file paxosarena-linux-amd64
+command -v ping
+```
+
+The `file` output must identify an x86-64 Linux executable, and the `ping`
+check must return a path.
+
+### Submit and monitor
+
+```bash
+cd ~/PaxosArena
+sbatch --account=dcl slurm/run-latency.sbatch
+```
+
+Submit from the repository root as shown above. The launcher uses Slurm's
+`SLURM_SUBMIT_DIR` to locate the binary, configuration, and helper scripts. If
+submitting from another directory, set `PAXOSARENA_ROOT=$HOME/PaxosArena`.
+
+Monitor or cancel the job:
+
+```bash
+squeue --me
+tail -f slurm-JOB_ID.out
+scancel JOB_ID
+```
+
+Slurm removes all experiment processes when the allocation ends. The cost
+estimator uses the requested 30-minute wall-time; billing uses the resources
+for the actual allocation duration. Five repetitions normally finish well
+before that limit.
+
+### Results
+
+The job prints a result directory such as:
+
+```text
+/scratch/USER/paxosarena-JOB_ID
+```
+
+Important output paths:
+
+| Path | Contents |
+| --- | --- |
+| `summary.csv` | Five-run averages and sample standard deviations for mean, median, p95, p99, minimum, and maximum latency. |
+| `repetition-summaries.csv` | All per-repetition summary rows with repetition identifiers. |
+| `repetition-XX/results/summary.csv` | Per-region and overall latency statistics for one repetition. |
+| `repetition-XX/results/` | Raw measured client latency logs; warm-up latency is excluded. |
+| `repetition-XX/stdout/` | Master, replica, and client process output. |
+| `repetition-XX/logs/` | Application logs. |
+| `config/` | Generated physical-address configuration and latency matrix. |
+| `metadata.txt` | Job ID, timestamps, binary path, and repository path. |
+
+Preserve important results because `/scratch` is temporary:
+
+```bash
+mkdir -p ~/paxosarena-results
+cp -a /scratch/$USER/paxosarena-JOB_ID ~/paxosarena-results/
+```
+
+To override the binary, result directory, or client timeout:
+
+```bash
+sbatch --account=dcl \
+  --export=ALL,PAXOSARENA_BINARY=$HOME/bin/paxosarena,PAXOSARENA_RUN_DIR=/scratch/$USER/custom-run,CLIENT_TIMEOUT_SECONDS=300 \
+  slurm/run-latency.sbatch
+```
+
+## License
+
+See `LICENSE`.

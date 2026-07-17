@@ -9,6 +9,7 @@ import (
 )
 
 var LatencyConf = ""
+var LocalAddr = ""
 
 type LatencyTable struct {
 	ti map[int]time.Duration
@@ -158,8 +159,6 @@ func NewLatencyTable(conf, myAddr string, addrs []string) *LatencyTable {
 	}
 	defer f.Close()
 
-	myAddr = strings.Split(myAddr, ":")[0]
-
 	dt := &LatencyTable{
 		d: time.Duration(0),
 	}
@@ -186,7 +185,7 @@ func NewLatencyTable(conf, myAddr string, addrs []string) *LatencyTable {
 			d = time.Duration(int64(d) / int64(2))
 			addr1, addr2 := data[0], data[1]
 			for i := 0; i < 2; i++ {
-				if myAddr != addr1 {
+				if !sameEndpoint(myAddr, addr1) {
 					addr1, addr2 = data[1], data[0]
 					continue
 				}
@@ -195,7 +194,7 @@ func NewLatencyTable(conf, myAddr string, addrs []string) *LatencyTable {
 				}
 				dt.tn[addr2] = d
 				for rid, addr := range addrs {
-					if addr2 == strings.Split(addr, ":")[0] {
+					if sameEndpoint(addr2, addr) {
 						if dt.ti == nil {
 							dt.ti = make(map[int]time.Duration)
 						}
@@ -213,9 +212,14 @@ func (dt *LatencyTable) WaitDuration(addr string) time.Duration {
 	if dt == nil {
 		return time.Duration(0)
 	}
-	d, exists := dt.tn[strings.Split(addr, ":")[0]]
+	d, exists := dt.tn[addr]
 	if exists {
 		return d
+	}
+	for endpoint, delay := range dt.tn {
+		if sameEndpoint(endpoint, addr) {
+			return delay
+		}
 	}
 	return dt.d
 }
@@ -232,7 +236,35 @@ func (dt *LatencyTable) WaitDurationID(id int) time.Duration {
 }
 
 func IP() string {
-	conn, _ := net.Dial("udp", "8.8.8.8:80")
-	conn.Close()
-	return conn.LocalAddr().(*net.UDPAddr).IP.String()
+	if LocalAddr != "" {
+		return LocalAddr
+	}
+
+	addrs, err := net.InterfaceAddrs()
+	if err == nil {
+		for _, addr := range addrs {
+			ip, _, err := net.ParseCIDR(addr.String())
+			if err == nil && ip.To4() != nil && !ip.IsLoopback() {
+				return ip.String()
+			}
+		}
+	}
+	return "127.0.0.1"
+}
+
+func sameEndpoint(left, right string) bool {
+	if left == right {
+		return true
+	}
+	leftHost, leftHasPort := endpointHost(left)
+	rightHost, rightHasPort := endpointHost(right)
+	return (!leftHasPort || !rightHasPort) && leftHost == rightHost
+}
+
+func endpointHost(endpoint string) (string, bool) {
+	host, _, err := net.SplitHostPort(endpoint)
+	if err == nil {
+		return host, true
+	}
+	return endpoint, false
 }

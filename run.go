@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/rpc"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,11 +22,9 @@ import (
 )
 
 func runReplica(c *config.Config, logger *dlog.Logger) {
-	port := c.Port
-
-	log.Printf("Server starting on port %d", port)
 	maddr := fmt.Sprintf("%s:%d", c.MasterAddr, c.MasterPort)
-	addr := c.ReplicaAddrs[c.Alias]
+	addr, port := replicaEndpoint(c.ReplicaAddrs[c.Alias], c.Port)
+	log.Printf("Server starting on %s:%d", addr, port)
 	replicaId, nodeList, isLeader := registerWithMaster(addr, maddr, port)
 	f := (len(c.ReplicaAddrs) - 1) / 2
 	log.Printf("Tolerating %d max. failures", f)
@@ -67,6 +66,18 @@ func runReplica(c *config.Config, logger *dlog.Logger) {
 		log.Fatal("listen error:", err)
 	}
 	http.Serve(l, nil)
+}
+
+func replicaEndpoint(endpoint string, defaultPort int) (string, int) {
+	host, portText, err := net.SplitHostPort(endpoint)
+	if err != nil {
+		return endpoint, defaultPort
+	}
+	port, err := strconv.Atoi(portText)
+	if err != nil {
+		return endpoint, defaultPort
+	}
+	return host, port
 }
 
 func registerWithMaster(addr, mAddr string, port int) (int, []string, bool) {

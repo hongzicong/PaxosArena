@@ -196,8 +196,9 @@ func NewQuorumsFromFile(qfile string, r *Replica) ([]Quorum, []int32, error) {
 		addr = r.Config.ReplicaAddrs[addr]
 
 		for rid := int32(0); rid < int32(r.N); rid++ {
-			paddr := strings.Split(r.PeerAddrList[rid], ":")[0]
-			if addr == paddr {
+			peerAddr := r.PeerAddrList[rid]
+			peerHost := strings.Split(peerAddr, ":")[0]
+			if addr == peerAddr || (!strings.Contains(addr, ":") && addr == peerHost) {
 				id = rid
 				break
 			}

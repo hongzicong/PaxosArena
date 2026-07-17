@@ -1,8 +1,6 @@
 package curp
 
 import (
-	"sync"
-
 	"github.com/imdea-software/swiftpaxos/client"
 	"github.com/imdea-software/swiftpaxos/replica"
 	"github.com/imdea-software/swiftpaxos/replica/defs"
@@ -21,7 +19,6 @@ type Client struct {
 	Q         replica.ThreeQuarters
 	M         replica.Majority
 	cs        CommunicationSupply
-	num       int
 	val       state.Value
 	leader    int32
 	ballot    int32
@@ -33,19 +30,7 @@ type Client struct {
 	alreadySlow map[CommandId]struct{}
 }
 
-var (
-	m         sync.Mutex
-	clientNum int
-)
-
-// pclients - Number of clients already running on other machines
-// This is needed to generate a new key for each new request
-func NewClient(b *client.BufferClient, repNum, reqNum, pclients int) *Client {
-	m.Lock()
-	num := clientNum
-	clientNum++
-	m.Unlock()
-
+func NewClient(b *client.BufferClient, repNum int) *Client {
 	c := &Client{
 		BufferClient: b,
 
@@ -53,7 +38,6 @@ func NewClient(b *client.BufferClient, repNum, reqNum, pclients int) *Client {
 		t:   NewTimer(),
 		Q:   replica.NewThreeQuartersOf(repNum),
 		M:   replica.NewMajorityOf(repNum),
-		num: num,
 		val: nil,
 
 		leader:    -1,
@@ -75,16 +59,6 @@ func NewClient(b *client.BufferClient, repNum, reqNum, pclients int) *Client {
 	t := fastrpc.NewTableId(defs.RPC_TABLE)
 	initCs(&c.cs, t)
 	c.RegisterRPCTable(t)
-
-	// Generate a new key for each new request
-	if pclients != -1 {
-		i := 0
-		c.GetClientKey = func() int64 {
-			k := 100 + i + (reqNum * (c.num + pclients))
-			i++
-			return int64(k)
-		}
-	}
 
 	go c.handleMsgs()
 

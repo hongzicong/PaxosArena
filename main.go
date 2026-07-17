@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -64,6 +63,12 @@ func main() {
 	}
 
 	c.Quorum = *quorum
+	switch c.MachineType {
+	case config.ReplicaMachine:
+		defs.LocalAddr = c.ReplicaAddrs[c.Alias]
+	case config.ClientMachine:
+		defs.LocalAddr = c.ClientAddrs[c.Alias]
+	}
 
 	run(c)
 }
@@ -129,10 +134,9 @@ func runSingleClient(c *config.Config, i int, verbose bool) {
 	server := c.Proxy.ProxyOf(c.ClientAddrs[c.Alias])
 	server = c.ReplicaAddrs[server]
 	cl := client.NewClientLog(server, c.MasterAddr, c.MasterPort, c.Fast, c.Leaderless, verbose, l)
-	b := client.NewBufferClient(cl, c.Reqs, c.CommandSize, c.Conflicts, c.Writes, int64(c.Key))
-	if c.Pipeline {
-		b.Pipeline(c.Syncs, int32(c.Pendings))
-	}
+	b := client.NewBufferClient(cl, c.Reqs, c.CommandSize, c.Writes, c.KeyCount, c.ZipfSkew)
+	b.PoissonArrivals(c.ArrivalRate)
+	b.MeasureFor(c.Warmup, c.Duration)
 	if err := b.Connect(); err != nil {
 		log.Fatal(err)
 	}
@@ -143,20 +147,7 @@ func runSingleClient(c *config.Config, i int, verbose bool) {
 		}
 		cl.Loop()
 	} else if p == "curp" {
-		cls := []string{}
-		for a := range c.ClientAddrs {
-			cls = append(cls, a)
-		}
-		sort.Slice(cls, func(i, j int) bool {
-			return cls[i] < cls[j]
-		})
-		pclients := 0
-		for i, a := range cls {
-			if a == c.Alias {
-				pclients = (c.Clones + 1) * i
-			}
-		}
-		cl := curp.NewClient(b, len(c.ReplicaAddrs), c.Reqs, pclients)
+		cl := curp.NewClient(b, len(c.ReplicaAddrs))
 		if cl == nil {
 			return
 		}

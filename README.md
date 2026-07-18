@@ -212,7 +212,7 @@ before that limit.
 The job prints a result directory such as:
 
 ```text
-/scratch/USER/consensusarena-JOB_ID
+/scratch/zihong/consensusarena-JOB_ID
 ```
 
 Important output paths:
@@ -232,14 +232,14 @@ Preserve important results because `/scratch` is temporary:
 
 ```bash
 mkdir -p ~/consensusarena-results
-cp -a /scratch/$USER/consensusarena-JOB_ID ~/consensusarena-results/
+cp -a /scratch/zihong/consensusarena-JOB_ID ~/consensusarena-results/
 ```
 
 To override the binary, result directory, or client timeout:
 
 ```bash
 sbatch --account=dcl \
-  --export=ALL,CONSENSUSARENA_BINARY=$HOME/bin/consensusarena,CONSENSUSARENA_RUN_DIR=/scratch/$USER/custom-run,CLIENT_TIMEOUT_SECONDS=300 \
+  --export=ALL,CONSENSUSARENA_BINARY=$HOME/bin/consensusarena,CONSENSUSARENA_RUN_DIR=/scratch/zihong/custom-run,CLIENT_TIMEOUT_SECONDS=300 \
   slurm/run-latency.sbatch
 ```
 

@@ -10,15 +10,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hongzicong/paxosarena/config"
-	"github.com/hongzicong/paxosarena/curp"
-	"github.com/hongzicong/paxosarena/dlog"
-	"github.com/hongzicong/paxosarena/epaxos"
-	"github.com/hongzicong/paxosarena/fastpaxos"
-	"github.com/hongzicong/paxosarena/n2paxos"
-	"github.com/hongzicong/paxosarena/paxos"
-	"github.com/hongzicong/paxosarena/replica/defs"
-	"github.com/hongzicong/paxosarena/swift"
+	"github.com/hongzicong/ConsensusArena/config"
+	"github.com/hongzicong/ConsensusArena/curp"
+	"github.com/hongzicong/ConsensusArena/dlog"
+	"github.com/hongzicong/ConsensusArena/epaxos"
+	"github.com/hongzicong/ConsensusArena/fastpaxos"
+	"github.com/hongzicong/ConsensusArena/n2paxos"
+	"github.com/hongzicong/ConsensusArena/paxos"
+	"github.com/hongzicong/ConsensusArena/replica/defs"
+	"github.com/hongzicong/ConsensusArena/swift"
 )
 
 func runReplica(c *config.Config, logger *dlog.Logger) {

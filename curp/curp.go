@@ -5,12 +5,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hongzicong/paxosarena/config"
-	"github.com/hongzicong/paxosarena/dlog"
-	"github.com/hongzicong/paxosarena/hook"
-	"github.com/hongzicong/paxosarena/replica"
-	"github.com/hongzicong/paxosarena/replica/defs"
-	"github.com/hongzicong/paxosarena/state"
+	"github.com/hongzicong/ConsensusArena/config"
+	"github.com/hongzicong/ConsensusArena/dlog"
+	"github.com/hongzicong/ConsensusArena/hook"
+	"github.com/hongzicong/ConsensusArena/replica"
+	"github.com/hongzicong/ConsensusArena/replica/defs"
+	"github.com/hongzicong/ConsensusArena/state"
 	"github.com/orcaman/concurrent-map"
 )
 

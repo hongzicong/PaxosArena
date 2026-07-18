@@ -5,7 +5,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/hongzicong/paxosarena/state"
+	"github.com/hongzicong/ConsensusArena/state"
 )
 
 // master RPC definitions

@@ -3,10 +3,10 @@ package fastpaxos
 import (
 	"sort"
 
-	"github.com/hongzicong/paxosarena/config"
-	"github.com/hongzicong/paxosarena/dlog"
-	"github.com/hongzicong/paxosarena/replica"
-	"github.com/hongzicong/paxosarena/replica/defs"
+	"github.com/hongzicong/ConsensusArena/config"
+	"github.com/hongzicong/ConsensusArena/dlog"
+	"github.com/hongzicong/ConsensusArena/replica"
+	"github.com/hongzicong/ConsensusArena/replica/defs"
 )
 
 type Replica struct {

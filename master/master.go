@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hongzicong/paxosarena/config"
-	"github.com/hongzicong/paxosarena/dlog"
-	"github.com/hongzicong/paxosarena/replica/defs"
+	"github.com/hongzicong/ConsensusArena/config"
+	"github.com/hongzicong/ConsensusArena/dlog"
+	"github.com/hongzicong/ConsensusArena/replica/defs"
 )
 
 type Master struct {

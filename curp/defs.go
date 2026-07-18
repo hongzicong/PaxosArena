@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hongzicong/paxosarena/replica/defs"
-	fastrpc "github.com/hongzicong/paxosarena/rpc"
-	"github.com/hongzicong/paxosarena/state"
+	"github.com/hongzicong/ConsensusArena/replica/defs"
+	fastrpc "github.com/hongzicong/ConsensusArena/rpc"
+	"github.com/hongzicong/ConsensusArena/state"
 )
 
 // status

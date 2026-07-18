@@ -6,8 +6,8 @@ import (
 	"io"
 	"sync"
 
-	fastrpc "github.com/hongzicong/paxosarena/rpc"
-	"github.com/hongzicong/paxosarena/state"
+	fastrpc "github.com/hongzicong/ConsensusArena/rpc"
+	"github.com/hongzicong/ConsensusArena/state"
 )
 
 type Prepare struct {

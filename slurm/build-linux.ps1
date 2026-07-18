@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Output = "paxosarena-linux-amd64"
+    [string]$Output = "consensusarena-linux-amd64"
 )
 
 Set-StrictMode -Version Latest

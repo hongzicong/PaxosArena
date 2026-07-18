@@ -1,6 +1,6 @@
 package curp
 
-import "github.com/hongzicong/paxosarena/rpc"
+import "github.com/hongzicong/ConsensusArena/rpc"
 
 type Batcher struct {
 	acks chan rpc.Serializable

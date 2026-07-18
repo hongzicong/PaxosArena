@@ -3,7 +3,7 @@ package swift
 import (
 	"encoding/binary"
 
-	"github.com/hongzicong/paxosarena/state"
+	"github.com/hongzicong/ConsensusArena/state"
 )
 
 type keyInfo interface {

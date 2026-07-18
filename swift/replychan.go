@@ -1,8 +1,8 @@
 package swift
 
 import (
-	"github.com/hongzicong/paxosarena/replica/defs"
-	"github.com/hongzicong/paxosarena/state"
+	"github.com/hongzicong/ConsensusArena/replica/defs"
+	"github.com/hongzicong/ConsensusArena/state"
 )
 
 type replyArgs struct {

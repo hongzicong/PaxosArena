@@ -1,8 +1,8 @@
 package replica
 
 import (
-	"github.com/hongzicong/paxosarena/replica/defs"
-	fastrpc "github.com/hongzicong/paxosarena/rpc"
+	"github.com/hongzicong/ConsensusArena/replica/defs"
+	fastrpc "github.com/hongzicong/ConsensusArena/rpc"
 )
 
 const (

@@ -1,13 +1,13 @@
-# PaxosArena
+# ConsensusArena
 
-PaxosArena is an experimental framework for running and comparing
+ConsensusArena is an experimental framework for running and comparing
 Paxos-family state-machine replication protocols. It provides a common master,
 replica, client, workload, latency-injection, quorum, and result-analysis path
 for local or multi-node experiments.
 
 The repository includes the prototype implementation of the SwiftPaxos
 protocol presented at [NSDI '24](https://www.usenix.org/conference/nsdi24/presentation/ryabinin),
-alongside several related protocols. PaxosArena originated from the SwiftPaxos
+alongside several related protocols. ConsensusArena originated from the SwiftPaxos
 and [Egalitarian Paxos](https://github.com/otrack/epaxos) codebases.
 
 ## Implemented protocols
@@ -36,9 +36,9 @@ executable and does not require a container runtime.
 Clone and build for the current platform:
 
 ```bash
-git clone https://github.com/hongzicong/PaxosArena.git
-cd PaxosArena
-go build -trimpath -o paxosarena .
+git clone https://github.com/hongzicong/ConsensusArena.git
+cd ConsensusArena
+go build -trimpath -o consensusarena .
 ```
 
 To cross-compile the Linux x86-64 binary from Windows PowerShell:
@@ -47,7 +47,7 @@ To cross-compile the Linux x86-64 binary from Windows PowerShell:
 powershell -ExecutionPolicy Bypass -File .\slurm\build-linux.ps1
 ```
 
-This creates `paxosarena-linux-amd64` in the repository root and restores the
+This creates `consensusarena-linux-amd64` in the repository root and restores the
 previous Go environment variables after the build.
 
 ## Architecture
@@ -61,12 +61,12 @@ An experiment contains three participant types:
 Launch participants with a deployment configuration:
 
 ```bash
-./paxosarena -run master -config deployment.conf -alias m0
+./consensusarena -run master -config deployment.conf -alias m0
 
-./paxosarena -run replica -config deployment.conf \
+./consensusarena -run replica -config deployment.conf \
   -latency latency.conf -quorum quorum.conf -alias replica-name
 
-./paxosarena -run client -config deployment.conf \
+./consensusarena -run client -config deployment.conf \
   -latency latency.conf -alias client-name
 ```
 
@@ -84,7 +84,7 @@ Important command-line options:
 
 ## Select a protocol
 
-PaxosArena accepts these case-insensitive protocol values:
+ConsensusArena accepts these case-insensitive protocol values:
 
 | Configuration value | Protocol |
 | --- | --- |
@@ -105,7 +105,7 @@ For a single Slurm run, leave the file unchanged and export an override:
 
 ```bash
 sbatch --account=dcl \
-  --export=ALL,PAXOSARENA_PROTOCOL=epaxos \
+  --export=ALL,CONSENSUSARENA_PROTOCOL=epaxos \
   slurm/run-latency.sbatch
 ```
 
@@ -165,18 +165,18 @@ Connect to the EPFL VPN when outside the EPFL network. From the repository
 directory in Windows PowerShell:
 
 ```powershell
-ssh zihong@jed.hpc.epfl.ch "mkdir -p ~/PaxosArena"
-scp paxosarena-linux-amd64 latency.conf quorum.conf zihong@jed.hpc.epfl.ch:~/PaxosArena/
-scp -r slurm zihong@jed.hpc.epfl.ch:~/PaxosArena/
+ssh zihong@jed.hpc.epfl.ch "mkdir -p ~/ConsensusArena"
+scp consensusarena-linux-amd64 latency.conf quorum.conf zihong@jed.hpc.epfl.ch:~/ConsensusArena/
+scp -r slurm zihong@jed.hpc.epfl.ch:~/ConsensusArena/
 ssh zihong@jed.hpc.epfl.ch
 ```
 
 Prepare and verify the binary on Jed:
 
 ```bash
-cd ~/PaxosArena
-chmod +x paxosarena-linux-amd64
-file paxosarena-linux-amd64
+cd ~/ConsensusArena
+chmod +x consensusarena-linux-amd64
+file consensusarena-linux-amd64
 command -v ping
 ```
 
@@ -186,13 +186,13 @@ check must return a path.
 ### Submit and monitor
 
 ```bash
-cd ~/PaxosArena
+cd ~/ConsensusArena
 sbatch --account=dcl slurm/run-latency.sbatch
 ```
 
 Submit from the repository root as shown above. The launcher uses Slurm's
 `SLURM_SUBMIT_DIR` to locate the binary, configuration, and helper scripts. If
-submitting from another directory, set `PAXOSARENA_ROOT=$HOME/PaxosArena`.
+submitting from another directory, set `CONSENSUSARENA_ROOT=$HOME/ConsensusArena`.
 
 Monitor or cancel the job:
 
@@ -212,7 +212,7 @@ before that limit.
 The job prints a result directory such as:
 
 ```text
-/scratch/USER/paxosarena-JOB_ID
+/scratch/USER/consensusarena-JOB_ID
 ```
 
 Important output paths:
@@ -231,15 +231,15 @@ Important output paths:
 Preserve important results because `/scratch` is temporary:
 
 ```bash
-mkdir -p ~/paxosarena-results
-cp -a /scratch/$USER/paxosarena-JOB_ID ~/paxosarena-results/
+mkdir -p ~/consensusarena-results
+cp -a /scratch/$USER/consensusarena-JOB_ID ~/consensusarena-results/
 ```
 
 To override the binary, result directory, or client timeout:
 
 ```bash
 sbatch --account=dcl \
-  --export=ALL,PAXOSARENA_BINARY=$HOME/bin/paxosarena,PAXOSARENA_RUN_DIR=/scratch/$USER/custom-run,CLIENT_TIMEOUT_SECONDS=300 \
+  --export=ALL,CONSENSUSARENA_BINARY=$HOME/bin/consensusarena,CONSENSUSARENA_RUN_DIR=/scratch/$USER/custom-run,CLIENT_TIMEOUT_SECONDS=300 \
   slurm/run-latency.sbatch
 ```
 

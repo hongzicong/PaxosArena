@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hongzicong/paxosarena/replica"
-	"github.com/hongzicong/paxosarena/replica/defs"
-	"github.com/hongzicong/paxosarena/state"
+	"github.com/hongzicong/ConsensusArena/replica"
+	"github.com/hongzicong/ConsensusArena/replica/defs"
+	"github.com/hongzicong/ConsensusArena/state"
 	"github.com/orcaman/concurrent-map"
 )
 

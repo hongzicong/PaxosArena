@@ -3,8 +3,8 @@ package epaxos
 import (
 	"sort"
 
-	"github.com/hongzicong/paxosarena/replica/defs"
-	"github.com/hongzicong/paxosarena/state"
+	"github.com/hongzicong/ConsensusArena/replica/defs"
+	"github.com/hongzicong/ConsensusArena/state"
 )
 
 const (

@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hongzicong/paxosarena/config"
-	"github.com/hongzicong/paxosarena/dlog"
-	"github.com/hongzicong/paxosarena/replica"
-	"github.com/hongzicong/paxosarena/replica/defs"
-	fastrpc "github.com/hongzicong/paxosarena/rpc"
-	"github.com/hongzicong/paxosarena/state"
+	"github.com/hongzicong/ConsensusArena/config"
+	"github.com/hongzicong/ConsensusArena/dlog"
+	"github.com/hongzicong/ConsensusArena/replica"
+	"github.com/hongzicong/ConsensusArena/replica/defs"
+	fastrpc "github.com/hongzicong/ConsensusArena/rpc"
+	"github.com/hongzicong/ConsensusArena/state"
 )
 
 const MAX_INSTANCE = 10 * 1024 * 1024

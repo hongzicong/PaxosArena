@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hongzicong/paxosarena/replica/defs"
-	"github.com/hongzicong/paxosarena/state"
+	"github.com/hongzicong/ConsensusArena/replica/defs"
+	"github.com/hongzicong/ConsensusArena/state"
 )
 
 type ReqReply struct {

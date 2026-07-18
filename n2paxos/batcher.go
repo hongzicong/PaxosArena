@@ -1,6 +1,6 @@
 package n2paxos
 
-import "github.com/hongzicong/paxosarena/rpc"
+import "github.com/hongzicong/ConsensusArena/rpc"
 
 type Batcher struct {
 	twoAs chan BatcherOp

@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/hongzicong/paxosarena/state"
+	"github.com/hongzicong/ConsensusArena/state"
 )
 
 type SHash struct {

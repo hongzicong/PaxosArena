@@ -9,13 +9,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hongzicong/paxosarena/client"
-	"github.com/hongzicong/paxosarena/config"
-	"github.com/hongzicong/paxosarena/curp"
-	"github.com/hongzicong/paxosarena/dlog"
-	"github.com/hongzicong/paxosarena/master"
-	"github.com/hongzicong/paxosarena/replica/defs"
-	"github.com/hongzicong/paxosarena/swift"
+	"github.com/hongzicong/ConsensusArena/client"
+	"github.com/hongzicong/ConsensusArena/config"
+	"github.com/hongzicong/ConsensusArena/curp"
+	"github.com/hongzicong/ConsensusArena/dlog"
+	"github.com/hongzicong/ConsensusArena/master"
+	"github.com/hongzicong/ConsensusArena/replica/defs"
+	"github.com/hongzicong/ConsensusArena/swift"
 )
 
 var (

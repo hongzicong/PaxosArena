@@ -1,6 +1,6 @@
 package swift
 
-import fastrpc "github.com/hongzicong/paxosarena/rpc"
+import fastrpc "github.com/hongzicong/ConsensusArena/rpc"
 
 type Batcher struct {
 	fastAcks      chan BatcherOp

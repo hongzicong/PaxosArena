@@ -1,4 +1,4 @@
-module github.com/hongzicong/paxosarena
+module github.com/hongzicong/ConsensusArena
 
 go 1.20
 

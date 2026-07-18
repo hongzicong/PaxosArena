@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=paxosarena-latency
+#SBATCH --job-name=consensusarena-latency
 #SBATCH --partition=standard
 #SBATCH --qos=parallel
 #SBATCH --nodes=2
@@ -13,12 +13,12 @@
 set -euo pipefail
 export LC_ALL=C
 
-repo_root=${PAXOSARENA_ROOT:-${SLURM_SUBMIT_DIR:?SLURM_SUBMIT_DIR is not set}}
+repo_root=${CONSENSUSARENA_ROOT:-${SLURM_SUBMIT_DIR:?SLURM_SUBMIT_DIR is not set}}
 repo_root=$(cd "$repo_root" && pwd)
 script_dir="$repo_root/slurm"
-binary=${PAXOSARENA_BINARY:-$repo_root/paxosarena-linux-amd64}
+binary=${CONSENSUSARENA_BINARY:-$repo_root/consensusarena-linux-amd64}
 scratch_root=${SCRATCH:-/scratch/$USER}
-run_dir=${PAXOSARENA_RUN_DIR:-$scratch_root/paxosarena-$SLURM_JOB_ID}
+run_dir=${CONSENSUSARENA_RUN_DIR:-$scratch_root/consensusarena-$SLURM_JOB_ID}
 replica_ready_timeout=${REPLICA_READY_TIMEOUT_SECONDS:-180}
 client_timeout=${CLIENT_TIMEOUT_SECONDS:-300}
 runner_pid=
@@ -36,8 +36,8 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 if [[ ! -x "$binary" ]]; then
-    echo "Native PaxosArena binary is missing or not executable: $binary" >&2
-    echo "Build paxosarena-linux-amd64 and run chmod +x before submitting." >&2
+    echo "Native ConsensusArena binary is missing or not executable: $binary" >&2
+    echo "Build consensusarena-linux-amd64 and run chmod +x before submitting." >&2
     exit 1
 fi
 binary=$(readlink -f "$binary")
@@ -77,12 +77,12 @@ EOF
 awk -f "$script_dir/remap-addresses.awk" \
     "$run_dir/config/address-map.txt" "$script_dir/workload.conf" \
     > "$run_dir/config/cluster.conf"
-if [[ -n "${PAXOSARENA_PROTOCOL:-}" ]]; then
-    case "${PAXOSARENA_PROTOCOL,,}" in
+if [[ -n "${CONSENSUSARENA_PROTOCOL:-}" ]]; then
+    case "${CONSENSUSARENA_PROTOCOL,,}" in
         swiftpaxos|curp|fastpaxos|n2paxos|paxos|epaxos) ;;
-        *) echo "Unsupported protocol: $PAXOSARENA_PROTOCOL" >&2; exit 1 ;;
+        *) echo "Unsupported protocol: $CONSENSUSARENA_PROTOCOL" >&2; exit 1 ;;
     esac
-    awk -v protocol="$PAXOSARENA_PROTOCOL" \
+    awk -v protocol="$CONSENSUSARENA_PROTOCOL" \
         '$1 == "protocol:" { $2 = protocol } { print }' \
         "$run_dir/config/cluster.conf" > "$run_dir/config/cluster.conf.tmp"
     mv "$run_dir/config/cluster.conf.tmp" "$run_dir/config/cluster.conf"

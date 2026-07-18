@@ -16,10 +16,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/imdea-software/swiftpaxos/dlog"
-	"github.com/imdea-software/swiftpaxos/replica/defs"
-	fastrpc "github.com/imdea-software/swiftpaxos/rpc"
-	"github.com/imdea-software/swiftpaxos/state"
+	"github.com/hongzicong/paxosarena/dlog"
+	"github.com/hongzicong/paxosarena/replica/defs"
+	fastrpc "github.com/hongzicong/paxosarena/rpc"
+	"github.com/hongzicong/paxosarena/state"
 )
 
 type Client struct {

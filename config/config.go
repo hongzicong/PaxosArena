@@ -86,8 +86,6 @@ type Config struct {
 	Leader *string
 
 	// -- client info --
-	// number of client requests
-	Reqs int
 	// warm-up period excluded from latency measurements
 	Warmup time.Duration
 	// duration of the measured request window
@@ -199,9 +197,6 @@ func Read(filename, alias string) (*Config, error) {
 			case "port":
 				c.Port, err = expectInt(words)
 				ok = true
-			case "reqs":
-				c.Reqs, err = expectInt(words)
-				ok = true
 			case "writes":
 				c.Writes, err = expectInt(words)
 				ok = true
@@ -217,7 +212,7 @@ func Read(filename, alias string) (*Config, error) {
 			case "warmup":
 				c.Warmup, err = expectDuration(words)
 				ok = true
-			case "runtime", "duration":
+			case "duration":
 				c.Duration, err = expectDuration(words)
 				ok = true
 			case "repetitions":
@@ -304,14 +299,8 @@ func Read(filename, alias string) (*Config, error) {
 	if c.Warmup < 0 {
 		return c, Err("warmup", "must be non-negative")
 	}
-	if c.Duration < 0 {
-		return c, Err("duration", "must be non-negative")
-	}
-	if c.Duration == 0 && c.Reqs <= 0 {
-		return c, Err("reqs", "must be greater than zero when duration is not set")
-	}
-	if c.Duration == 0 && c.Warmup > 0 {
-		return c, Err("warmup", "requires a positive duration")
+	if c.Duration <= 0 {
+		return c, Err("duration", "must be greater than zero")
 	}
 	if c.Repetitions <= 0 {
 		return c, Err("repetitions", "must be greater than zero")

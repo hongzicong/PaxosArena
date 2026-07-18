@@ -3,10 +3,10 @@ package fastpaxos
 import (
 	"sort"
 
-	"github.com/imdea-software/swiftpaxos/config"
-	"github.com/imdea-software/swiftpaxos/dlog"
-	"github.com/imdea-software/swiftpaxos/replica"
-	"github.com/imdea-software/swiftpaxos/replica/defs"
+	"github.com/hongzicong/paxosarena/config"
+	"github.com/hongzicong/paxosarena/dlog"
+	"github.com/hongzicong/paxosarena/replica"
+	"github.com/hongzicong/paxosarena/replica/defs"
 )
 
 type Replica struct {

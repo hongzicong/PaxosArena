@@ -5,7 +5,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/imdea-software/swiftpaxos/state"
+	"github.com/hongzicong/paxosarena/state"
 )
 
 // master RPC definitions

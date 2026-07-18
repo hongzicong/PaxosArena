@@ -3,8 +3,8 @@ package epaxos
 import (
 	"sort"
 
-	"github.com/imdea-software/swiftpaxos/replica/defs"
-	"github.com/imdea-software/swiftpaxos/state"
+	"github.com/hongzicong/paxosarena/replica/defs"
+	"github.com/hongzicong/paxosarena/state"
 )
 
 const (

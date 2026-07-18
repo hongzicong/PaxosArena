@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/imdea-software/swiftpaxos/replica"
-	"github.com/imdea-software/swiftpaxos/replica/defs"
-	"github.com/imdea-software/swiftpaxos/state"
+	"github.com/hongzicong/paxosarena/replica"
+	"github.com/hongzicong/paxosarena/replica/defs"
+	"github.com/hongzicong/paxosarena/state"
 	"github.com/orcaman/concurrent-map"
 )
 

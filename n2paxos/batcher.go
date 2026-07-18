@@ -1,6 +1,6 @@
 package n2paxos
 
-import "github.com/imdea-software/swiftpaxos/rpc"
+import "github.com/hongzicong/paxosarena/rpc"
 
 type Batcher struct {
 	twoAs chan BatcherOp

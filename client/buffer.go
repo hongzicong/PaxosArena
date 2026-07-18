@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/imdea-software/swiftpaxos/replica/defs"
-	"github.com/imdea-software/swiftpaxos/state"
+	"github.com/hongzicong/paxosarena/replica/defs"
+	"github.com/hongzicong/paxosarena/state"
 )
 
 type ReqReply struct {
@@ -24,20 +24,13 @@ type BufferClient struct {
 
 	Reply chan *ReqReply
 
-	seq         bool
 	psize       int
-	reqNum      int
 	writes      int
-	window      int32
-	syncFreq    int
 	arrivalRate float64
 	keyCount    int
 	zipfSkew    float64
 	warmup      time.Duration
 	duration    time.Duration
-
-	reqTime    []time.Time
-	launchTime time.Time
 
 	rand *rand.Rand
 }
@@ -54,34 +47,23 @@ var zipfCDFCache = struct {
 	values: make(map[zipfParameters][]float64),
 }
 
-func NewBufferClient(c *Client, reqNum, psize, writes, keyCount int, zipfSkew float64) *BufferClient {
+func NewBufferClient(c *Client, psize, writes, keyCount int, zipfSkew float64) *BufferClient {
 	bc := &BufferClient{
 		Client: c,
 
-		Reply: make(chan *ReqReply, reqNum+1),
+		Reply: make(chan *ReqReply, 1024),
 
-		seq:      true,
 		psize:    psize,
-		reqNum:   reqNum,
 		writes:   writes,
 		keyCount: keyCount,
 		zipfSkew: zipfSkew,
-
-		reqTime: make([]time.Time, reqNum+1),
 	}
 	source := rand.NewSource(time.Now().UnixNano() + int64(c.ClientId))
 	bc.rand = rand.New(source)
 	return bc
 }
 
-func (c *BufferClient) Pipeline(syncFreq int, window int32) {
-	c.seq = false
-	c.syncFreq = syncFreq
-	c.window = window
-}
-
 func (c *BufferClient) PoissonArrivals(arrivalRate float64) {
-	c.seq = false
 	c.arrivalRate = arrivalRate
 }
 
@@ -122,87 +104,7 @@ func (c *BufferClient) Loop() {
 	getKey := c.genGetKey()
 	val := make([]byte, c.psize)
 	c.rand.Read(val)
-	if c.arrivalRate > 0 {
-		if c.duration > 0 {
-			c.loopOpenTimed(getKey, val)
-			return
-		}
-		c.loopOpen(getKey, val)
-		return
-	}
-
-	var cmdM sync.Mutex
-	cmdNum := int32(0)
-	wait := make(chan struct{}, 0)
-	go func() {
-		for i := 0; i <= c.reqNum; i++ {
-			r := <-c.Reply
-			// Ignore first request
-			if i != 0 {
-				d := r.Time.Sub(c.reqTime[r.Seqnum])
-				m := float64(d.Nanoseconds()) / float64(time.Millisecond)
-				c.Println("Returning:", r.Val.String())
-				c.Printf("latency %v\n", m)
-			}
-			if c.window > 0 {
-				cmdM.Lock()
-				if cmdNum == c.window {
-					cmdNum--
-					cmdM.Unlock()
-					wait <- struct{}{}
-				} else {
-					cmdNum--
-					cmdM.Unlock()
-				}
-			}
-			if c.seq || (c.syncFreq > 0 && i%c.syncFreq == 0) {
-				wait <- struct{}{}
-			}
-		}
-		if !c.seq {
-			wait <- struct{}{}
-		}
-	}()
-
-	for i := 0; i <= c.reqNum; i++ {
-		key := getKey()
-		write := c.randomTrue(c.writes)
-		c.reqTime[i] = time.Now()
-
-		// Ignore first request
-		if i == 1 {
-			c.launchTime = c.reqTime[i]
-		}
-
-		if write {
-			c.SendWrite(key, state.Value(val))
-			// TODO: if the return value != i, something's wrong
-		} else {
-			c.SendRead(key)
-			// TODO: if the return value != i, something's wrong
-		}
-		if c.window > 0 {
-			cmdM.Lock()
-			if cmdNum == c.window-1 {
-				cmdNum++
-				cmdM.Unlock()
-				<-wait
-			} else {
-				cmdNum++
-				cmdM.Unlock()
-			}
-		}
-		if c.seq || (c.syncFreq > 0 && i%c.syncFreq == 0) {
-			<-wait
-		}
-	}
-
-	if !c.seq {
-		<-wait
-	}
-
-	c.Printf("Test took %v\n", time.Now().Sub(c.launchTime))
-	c.Disconnect()
+	c.loopOpen(getKey, val)
 }
 
 type scheduledRequest struct {
@@ -217,64 +119,6 @@ type requestTiming struct {
 }
 
 func (c *BufferClient) loopOpen(getKey func() int64, val []byte) {
-	c.Printf("Open-loop Poisson arrival rate %v requests/second\n", c.arrivalRate)
-
-	c.reqTime[0] = time.Now()
-	c.sendScheduledRequest(scheduledRequest{
-		key:   getKey(),
-		write: c.randomTrue(c.writes),
-	}, val)
-	<-c.Reply
-
-	if c.reqNum == 0 {
-		c.Printf("Test took %v\n", time.Duration(0))
-		c.Disconnect()
-		return
-	}
-
-	requests := make(chan scheduledRequest, c.reqNum)
-	go func() {
-		for request := range requests {
-			c.sendScheduledRequest(request, val)
-		}
-	}()
-
-	done := make(chan struct{})
-	go func() {
-		for i := 0; i < c.reqNum; i++ {
-			r := <-c.Reply
-			d := r.Time.Sub(c.reqTime[r.Seqnum])
-			m := float64(d.Nanoseconds()) / float64(time.Millisecond)
-			c.Println("Returning:", r.Val.String())
-			c.Printf("latency %v\n", m)
-		}
-		close(done)
-	}()
-
-	nextArrival := time.Now()
-	for i := 1; i <= c.reqNum; i++ {
-		nextArrival = nextArrival.Add(c.poissonInterval())
-		if delay := time.Until(nextArrival); delay > 0 {
-			time.Sleep(delay)
-		}
-
-		c.reqTime[i] = time.Now()
-		if i == 1 {
-			c.launchTime = c.reqTime[i]
-		}
-		requests <- scheduledRequest{
-			key:   getKey(),
-			write: c.randomTrue(c.writes),
-		}
-	}
-	close(requests)
-
-	<-done
-	c.Printf("Test took %v\n", time.Since(c.launchTime))
-	c.Disconnect()
-}
-
-func (c *BufferClient) loopOpenTimed(getKey func() int64, val []byte) {
 	c.Printf("Open-loop Poisson arrival rate %v requests/second\n", c.arrivalRate)
 	c.Printf("Warm-up %v, measurement duration %v\n", c.warmup, c.duration)
 

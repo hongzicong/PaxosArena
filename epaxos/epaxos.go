@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/imdea-software/swiftpaxos/config"
-	"github.com/imdea-software/swiftpaxos/dlog"
-	"github.com/imdea-software/swiftpaxos/replica"
-	"github.com/imdea-software/swiftpaxos/replica/defs"
-	fastrpc "github.com/imdea-software/swiftpaxos/rpc"
-	"github.com/imdea-software/swiftpaxos/state"
+	"github.com/hongzicong/paxosarena/config"
+	"github.com/hongzicong/paxosarena/dlog"
+	"github.com/hongzicong/paxosarena/replica"
+	"github.com/hongzicong/paxosarena/replica/defs"
+	fastrpc "github.com/hongzicong/paxosarena/rpc"
+	"github.com/hongzicong/paxosarena/state"
 )
 
 const MAX_INSTANCE = 10 * 1024 * 1024

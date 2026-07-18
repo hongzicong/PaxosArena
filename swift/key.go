@@ -3,7 +3,7 @@ package swift
 import (
 	"encoding/binary"
 
-	"github.com/imdea-software/swiftpaxos/state"
+	"github.com/hongzicong/paxosarena/state"
 )
 
 type keyInfo interface {

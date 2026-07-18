@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/imdea-software/swiftpaxos/state"
+	"github.com/hongzicong/paxosarena/state"
 )
 
 type SHash struct {

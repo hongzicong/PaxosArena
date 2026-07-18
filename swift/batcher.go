@@ -1,6 +1,6 @@
 package swift
 
-import fastrpc "github.com/imdea-software/swiftpaxos/rpc"
+import fastrpc "github.com/hongzicong/paxosarena/rpc"
 
 type Batcher struct {
 	fastAcks      chan BatcherOp

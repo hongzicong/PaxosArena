@@ -10,15 +10,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/imdea-software/swiftpaxos/config"
-	"github.com/imdea-software/swiftpaxos/curp"
-	"github.com/imdea-software/swiftpaxos/dlog"
-	"github.com/imdea-software/swiftpaxos/epaxos"
-	"github.com/imdea-software/swiftpaxos/fastpaxos"
-	"github.com/imdea-software/swiftpaxos/n2paxos"
-	"github.com/imdea-software/swiftpaxos/paxos"
-	"github.com/imdea-software/swiftpaxos/replica/defs"
-	"github.com/imdea-software/swiftpaxos/swift"
+	"github.com/hongzicong/paxosarena/config"
+	"github.com/hongzicong/paxosarena/curp"
+	"github.com/hongzicong/paxosarena/dlog"
+	"github.com/hongzicong/paxosarena/epaxos"
+	"github.com/hongzicong/paxosarena/fastpaxos"
+	"github.com/hongzicong/paxosarena/n2paxos"
+	"github.com/hongzicong/paxosarena/paxos"
+	"github.com/hongzicong/paxosarena/replica/defs"
+	"github.com/hongzicong/paxosarena/swift"
 )
 
 func runReplica(c *config.Config, logger *dlog.Logger) {

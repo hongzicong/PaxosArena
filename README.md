@@ -7,9 +7,8 @@ for local or multi-node experiments.
 
 The repository includes the prototype implementation of the SwiftPaxos
 protocol presented at [NSDI '24](https://www.usenix.org/conference/nsdi24/presentation/ryabinin),
-alongside several related protocols. PaxosArena is based on the original
-[SwiftPaxos codebase](https://github.com/imdea-software/swiftpaxos) and the
-[Egalitarian Paxos codebase](https://github.com/otrack/epaxos).
+alongside several related protocols. PaxosArena originated from the SwiftPaxos
+and [Egalitarian Paxos](https://github.com/otrack/epaxos) codebases.
 
 ## Implemented protocols
 
@@ -129,7 +128,6 @@ a Poisson process. Keys are selected with a Zipfian distribution.
 Default workload values:
 
 ```text
-reqs: 0
 writes: 100
 commandSize: 1000
 clones: 0
@@ -141,11 +139,10 @@ keyCount: 1000000
 zipfSkew: 0.9
 ```
 
-When `duration` is greater than zero, the client uses timed mode and ignores
-`reqs`. Every repetition generates warm-up traffic for 15 seconds without
-recording latency, records requests generated during the following 60 seconds,
-and then waits for all in-flight replies. The Slurm job restarts the master,
-replicas, and clients before each of the five repetitions.
+Every repetition generates warm-up traffic for 15 seconds without recording
+latency, records requests generated during the following 60 seconds, and then
+waits for all in-flight replies. The Slurm job restarts the master, replicas,
+and clients before each of the five repetitions.
 
 The Slurm launcher discovers the physical node addresses and rewrites the
 logical endpoints before starting the processes. Replica ports `7070` through

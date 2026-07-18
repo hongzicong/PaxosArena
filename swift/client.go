@@ -1,11 +1,11 @@
 package swift
 
 import (
-	"github.com/imdea-software/swiftpaxos/client"
-	"github.com/imdea-software/swiftpaxos/replica"
-	"github.com/imdea-software/swiftpaxos/replica/defs"
-	fastrpc "github.com/imdea-software/swiftpaxos/rpc"
-	"github.com/imdea-software/swiftpaxos/state"
+	"github.com/hongzicong/paxosarena/client"
+	"github.com/hongzicong/paxosarena/replica"
+	"github.com/hongzicong/paxosarena/replica/defs"
+	fastrpc "github.com/hongzicong/paxosarena/rpc"
+	"github.com/hongzicong/paxosarena/state"
 )
 
 type Client struct {

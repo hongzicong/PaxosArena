@@ -1,8 +1,8 @@
 package replica
 
 import (
-	"github.com/imdea-software/swiftpaxos/replica/defs"
-	fastrpc "github.com/imdea-software/swiftpaxos/rpc"
+	"github.com/hongzicong/paxosarena/replica/defs"
+	fastrpc "github.com/hongzicong/paxosarena/rpc"
 )
 
 const (

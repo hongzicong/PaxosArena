@@ -1,6 +1,6 @@
 package curp
 
-import "github.com/imdea-software/swiftpaxos/rpc"
+import "github.com/hongzicong/paxosarena/rpc"
 
 type Batcher struct {
 	acks chan rpc.Serializable

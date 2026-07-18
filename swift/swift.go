@@ -5,12 +5,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/imdea-software/swiftpaxos/config"
-	"github.com/imdea-software/swiftpaxos/dlog"
-	"github.com/imdea-software/swiftpaxos/hook"
-	"github.com/imdea-software/swiftpaxos/replica"
-	"github.com/imdea-software/swiftpaxos/replica/defs"
-	"github.com/imdea-software/swiftpaxos/state"
+	"github.com/hongzicong/paxosarena/config"
+	"github.com/hongzicong/paxosarena/dlog"
+	"github.com/hongzicong/paxosarena/hook"
+	"github.com/hongzicong/paxosarena/replica"
+	"github.com/hongzicong/paxosarena/replica/defs"
+	"github.com/hongzicong/paxosarena/state"
 	"github.com/orcaman/concurrent-map"
 )
 

@@ -79,7 +79,7 @@ awk -f "$script_dir/remap-addresses.awk" \
     > "$run_dir/config/cluster.conf"
 if [[ -n "${CONSENSUSARENA_PROTOCOL:-}" ]]; then
     case "${CONSENSUSARENA_PROTOCOL,,}" in
-        swiftpaxos|curp|fastpaxos|n2paxos|paxos|epaxos) ;;
+        swiftpaxos|curp|xpaxos|fastpaxos|n2paxos|paxos|epaxos) ;;
         *) echo "Unsupported protocol: $CONSENSUSARENA_PROTOCOL" >&2; exit 1 ;;
     esac
     awk -v protocol="$CONSENSUSARENA_PROTOCOL" \
@@ -93,7 +93,7 @@ awk -f "$script_dir/remap-addresses.awk" \
 cp "$repo_root/quorum.conf" "$run_dir/config/quorum.conf"
 
 replicas=(ap-south-1 ap-northeast-1 eu-west-3 us-west-1 af-south-1)
-repetitions=$(awk '$1 == "repetitions:" { print $2; exit }' "$run_dir/config/cluster.conf")
+repetitions=$(awk '$1 == "repetitions:" { print $2; exit }' "$run_dir/config/cluster.conf" | tr -d '\r')
 if [[ ! "$repetitions" =~ ^[1-9][0-9]*$ ]]; then
     echo "Invalid repetitions value: $repetitions" >&2
     exit 1

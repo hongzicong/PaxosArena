@@ -4,6 +4,7 @@ NR == FNR {
 }
 
 {
+    gsub(/\r/, "")
     for (field = 1; field <= NF; field++) {
         if ($field in address) {
             $field = address[$field]

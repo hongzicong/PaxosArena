@@ -128,30 +128,41 @@ a Poisson process. Keys are selected with a Zipfian distribution.
 Default workload values:
 
 ```text
-writes: 100
+writes: 50
 commandSize: 1000
 clones: 0
-arrivalRate: 50
-warmup: 15s
-duration: 45s
+arrivalRate: 4000
+warmup: 10s
+duration: 20s
 repetitions: 3
 keyCount: 1000000
 zipfSkew: 0.9
 ```
 
 `writes` is the percentage of generated commands that are writes. Direct runs
-use the base value above. By default, `slurm/run-latency.sbatch` overrides it
-with `0`, `50`, and `100` in sequence. Every ratio runs three repetitions; every
-repetition generates warm-up traffic for 15 seconds without recording latency,
-records requests generated during the following 45 seconds, and then waits for
-all in-flight replies. The Slurm job restarts the master, replicas, and clients
-before every repetition.
+use the base value above. By default, `slurm/run-latency.sbatch` runs these
+YCSB read/write ratio profiles:
 
-To run a different ratio set, pass a colon-separated override:
+| Profile | Reads | Writes | ConsensusArena mapping |
+| --- | ---: | ---: | --- |
+| A | 50% | 50% | READ to GET, UPDATE to PUT |
+| B | 95% | 5% | READ to GET, UPDATE to PUT |
+| C | 100% | 0% | READ to GET |
+
+These are ratio-only profiles rather than complete YCSB semantics. In
+particular, they use ConsensusArena's blob values and do not include a separate
+YCSB data-loading phase.
+
+Every profile runs three repetitions. Each repetition generates warm-up traffic
+for 10 seconds without recording latency, records requests generated during the
+following 20 seconds, and then waits for all in-flight replies. The Slurm job
+restarts the master, replicas, and clients before every repetition.
+
+To run a subset or a different order, pass a colon-separated profile override:
 
 ```bash
 sbatch --account=dcl \
-  --export=ALL,CONSENSUSARENA_WRITE_RATIOS=25:75 \
+  --export=ALL,CONSENSUSARENA_YCSB_PROFILES=A:C \
   slurm/run-latency.sbatch
 ```
 
@@ -230,14 +241,14 @@ Important output paths:
 
 | Path | Contents |
 | --- | --- |
-| `summary.csv` | Combined averages and sample standard deviations, keyed by `WriteRatioPercent`. |
-| `repetition-summaries.csv` | Combined per-repetition rows, keyed by `WriteRatioPercent`. |
-| `write-ratio-N/summary.csv` | Three-run averages and sample standard deviations for write ratio `N`. |
-| `write-ratio-N/repetition-summaries.csv` | All per-repetition rows for write ratio `N`. |
-| `write-ratio-N/repetition-XX/results/summary.csv` | Per-region and overall latency statistics for one repetition. |
-| `write-ratio-N/repetition-XX/results/` | Raw measured client latency logs; warm-up latency is excluded. |
-| `write-ratio-N/repetition-XX/stdout/` | Master, replica, and client process output. |
-| `write-ratio-N/repetition-XX/logs/` | Application logs. |
+| `summary.csv` | Combined averages and sample standard deviations, keyed by `YCSBProfile`, `ReadRatioPercent`, and `WriteRatioPercent`. |
+| `repetition-summaries.csv` | Combined per-repetition rows, keyed by YCSB profile and read/write ratio. |
+| `ycsb-X/summary.csv` | Three-run averages and sample standard deviations for profile `X`. |
+| `ycsb-X/repetition-summaries.csv` | All per-repetition rows for profile `X`. |
+| `ycsb-X/repetition-XX/results/summary.csv` | Per-region and overall latency statistics for one repetition. |
+| `ycsb-X/repetition-XX/results/` | Raw measured client latency logs; warm-up latency is excluded. |
+| `ycsb-X/repetition-XX/stdout/` | Master, replica, and client process output. |
+| `ycsb-X/repetition-XX/logs/` | Application logs. |
 | `config/` | Generated physical-address configuration and latency matrix. |
 | `metadata.txt` | Job ID, timestamps, binary path, and repository path. |
 
@@ -248,11 +259,11 @@ mkdir -p ~/consensusarena-results
 cp -a /scratch/zihong/consensusarena-JOB_ID ~/consensusarena-results/
 ```
 
-To override the binary, result directory, write ratios, or client timeout:
+To override the binary, result directory, YCSB profiles, or client timeout:
 
 ```bash
 sbatch --account=dcl \
-  --export=ALL,CONSENSUSARENA_BINARY=$HOME/bin/consensusarena,CONSENSUSARENA_RUN_DIR=/scratch/zihong/custom-run,CONSENSUSARENA_WRITE_RATIOS=0:50:100,CLIENT_TIMEOUT_SECONDS=300 \
+  --export=ALL,CONSENSUSARENA_BINARY=$HOME/bin/consensusarena,CONSENSUSARENA_RUN_DIR=/scratch/zihong/custom-run,CONSENSUSARENA_YCSB_PROFILES=A:B:C,CLIENT_TIMEOUT_SECONDS=300 \
   slurm/run-latency.sbatch
 ```
 

@@ -286,7 +286,7 @@ func (c *BufferClient) randomTrue(prob int) bool {
 		return true
 	}
 	if prob > 0 {
-		return c.rand.Intn(100) <= prob
+		return c.rand.Intn(100) < prob
 	}
 	return false
 }

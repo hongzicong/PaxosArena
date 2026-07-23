@@ -158,14 +158,15 @@ func (t *Key) String() string {
 
 func (t *Command) String() string {
 	ret := ""
-	if t.Op == PUT {
+	switch t.Op {
+	case PUT:
 		ret = "PUT( " + t.K.String() + " , " + t.V.String() + " )"
-	} else if t.Op == GET {
+	case GET:
 		ret = "GET( " + t.K.String() + " )"
-	} else if t.Op == SCAN {
+	case SCAN:
 		count := binary.LittleEndian.Uint64(t.V)
 		ret = "SCAN( " + t.K.String() + " , " + fmt.Sprint(count) + " )"
-	} else {
+	default:
 		ret = "UNKNOWN( " + t.V.String() + " , " + t.K.String() + " )"
 	}
 	return ret

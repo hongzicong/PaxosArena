@@ -175,7 +175,6 @@ func (c *BufferClient) loopOpen(getKey func() int64) {
 					if timing.write {
 						operation = "UPDATE"
 					}
-					c.Println("Returning:", reply.Val.String())
 					c.Printf("latency %s %v\n", operation, milliseconds)
 				}
 				replies.Done()

@@ -137,6 +137,8 @@ duration: 20s
 repetitions: 3
 keyCount: 1000000
 zipfSkew: 0.9
+preload: true
+preloadSeed: 1
 ```
 
 `writes` is the percentage of generated commands that are writes. Direct runs
@@ -157,6 +159,15 @@ Every profile runs three repetitions. Each repetition generates warm-up traffic
 for 10 seconds without recording latency, records requests generated during the
 following 20 seconds, and then waits for all in-flight replies. The Slurm job
 restarts the master, replicas, and clients before every repetition.
+
+When `preload` is enabled, every replica constructs the same deterministic
+genesis state before accepting clients. The state contains `keyCount` records
+with keys from `0` through `keyCount - 1`; every value is `commandSize` bytes and
+is derived from the key and `preloadSeed`. Preloading is outside the consensus
+log and outside the warm-up and measurement windows. The Slurm launcher extracts
+the reported SHA-256 state digest from all five replica logs and starts clients
+only after all digests match. With the defaults, the raw value data is about
+1 GB per replica, excluding tree and runtime overhead.
 
 To run a subset or a different order, pass a colon-separated profile override:
 
@@ -249,6 +260,7 @@ Important output paths:
 | `ycsb-X/repetition-XX/results/` | Raw measured client latency logs; warm-up latency is excluded. |
 | `ycsb-X/repetition-XX/stdout/` | Master, replica, and client process output. |
 | `ycsb-X/repetition-XX/logs/` | Application logs. |
+| `ycsb-X/repetition-XX/metadata.txt` | Profile, write ratio, preload status, and verified preload digest. |
 | `config/` | Generated physical-address configuration and latency matrix. |
 | `metadata.txt` | Job ID, timestamps, binary path, and repository path. |
 

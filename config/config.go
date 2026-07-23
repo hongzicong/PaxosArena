@@ -105,8 +105,10 @@ type Config struct {
 	// number of keys accessed by the client workload
 	KeyCount int
 	// exponent of the Zipfian key-access distribution
-	ZipfSkew float64
-	Pipeline bool
+	ZipfSkew    float64
+	Preload     bool
+	PreloadSeed int
+	Pipeline    bool
 	// when pipelining the frequency of syncs
 	Syncs int
 	// when pipelining the maximal number of pending commands
@@ -129,6 +131,7 @@ func Read(filename, alias string) (*Config, error) {
 		ArrivalRate:  5,
 		KeyCount:     1_000_000,
 		ZipfSkew:     0.9,
+		PreloadSeed:  1,
 		Repetitions:  1,
 	}
 
@@ -255,6 +258,12 @@ func Read(filename, alias string) (*Config, error) {
 			case "zipfskew":
 				c.ZipfSkew, err = expectFloat(words)
 				ok = true
+			case "preload":
+				c.Preload, err = expectBool(words)
+				ok = true
+			case "preloadseed":
+				c.PreloadSeed, err = expectInt(words)
+				ok = true
 			case "pendings":
 				c.Pendings, err = expectInt(words)
 				ok = true
@@ -304,6 +313,12 @@ func Read(filename, alias string) (*Config, error) {
 	}
 	if c.Repetitions <= 0 {
 		return c, Err("repetitions", "must be greater than zero")
+	}
+	if c.Preload && c.CommandSize <= 0 {
+		return c, Err("commandSize", "must be greater than zero when preload is enabled")
+	}
+	if c.PreloadSeed < 0 {
+		return c, Err("preloadSeed", "must be non-negative")
 	}
 
 	return c, nil

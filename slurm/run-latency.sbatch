@@ -19,7 +19,7 @@ script_dir="$repo_root/slurm"
 binary=${CONSENSUSARENA_BINARY:-$repo_root/consensusarena-linux-amd64}
 scratch_root=${SCRATCH:-/scratch/$USER}
 run_dir=${CONSENSUSARENA_RUN_DIR:-$scratch_root/consensusarena-$SLURM_JOB_ID}
-replica_ready_timeout=${REPLICA_READY_TIMEOUT_SECONDS:-180}
+replica_ready_timeout=${REPLICA_READY_TIMEOUT_SECONDS:-900}
 client_timeout=${CLIENT_TIMEOUT_SECONDS:-300}
 ycsb_profiles_spec=${CONSENSUSARENA_YCSB_PROFILES:-A:B:C}
 runner_pid=
@@ -131,14 +131,40 @@ if [[ ! "$repetitions" =~ ^[1-9][0-9]*$ ]]; then
     echo "Invalid repetitions value: $repetitions" >&2
     exit 1
 fi
-printf 'repetitions=%s\n' "$repetitions" >> "$run_dir/metadata.txt"
+preload_enabled=$(awk 'tolower($1) == "preload:" { print tolower($2); exit }' "$run_dir/config/cluster.conf" | tr -d '\r')
+preload_enabled=${preload_enabled:-false}
+if [[ "$preload_enabled" != "true" && "$preload_enabled" != "false" ]]; then
+    echo "Invalid preload value: $preload_enabled" >&2
+    exit 1
+fi
+preload_records=$(awk 'tolower($1) == "keycount:" { print $2; exit }' "$run_dir/config/cluster.conf" | tr -d '\r')
+preload_value_size=$(awk 'tolower($1) == "commandsize:" { print $2; exit }' "$run_dir/config/cluster.conf" | tr -d '\r')
+preload_seed=$(awk 'tolower($1) == "preloadseed:" { print $2; exit }' "$run_dir/config/cluster.conf" | tr -d '\r')
+preload_seed=${preload_seed:-1}
+if [[ "$preload_enabled" == "true" ]]; then
+    if [[ ! "$preload_records" =~ ^[1-9][0-9]*$ ]]; then
+        echo "Invalid preload record count: $preload_records" >&2
+        exit 1
+    fi
+    if [[ ! "$preload_value_size" =~ ^[1-9][0-9]*$ ]]; then
+        echo "Invalid preload value size: $preload_value_size" >&2
+        exit 1
+    fi
+    if [[ ! "$preload_seed" =~ ^[0-9]+$ ]]; then
+        echo "Invalid preload seed: $preload_seed" >&2
+        exit 1
+    fi
+fi
+printf 'repetitions=%s\npreload_enabled=%s\npreload_records=%s\npreload_value_size=%s\npreload_seed=%s\n' \
+    "$repetitions" "$preload_enabled" "$preload_records" "$preload_value_size" "$preload_seed" \
+    >> "$run_dir/metadata.txt"
 
 run_repetition() {
     local profile_dir=$1
     local repetition=$2
     local profile=$3
     local write_ratio=$4
-    local repetition_name repetition_dir deadline ready alias replica_log done_count status_file runner_exit
+    local repetition_name repetition_dir deadline ready alias replica_log done_count status_file runner_exit digest preload_digest
     repetition_name=$(printf 'repetition-%02d' "$repetition")
     repetition_dir="$profile_dir/$repetition_name"
     active_run_dir=$repetition_dir
@@ -146,6 +172,8 @@ run_repetition() {
     cp "$profile_dir/config/cluster.conf" "$repetition_dir/config/cluster.conf"
     cp "$profile_dir/config/latency.conf" "$repetition_dir/config/latency.conf"
     cp "$profile_dir/config/quorum.conf" "$repetition_dir/config/quorum.conf"
+    printf 'ycsb_profile=%s\nwrite_ratio_percent=%s\npreload_enabled=%s\n' \
+        "$profile" "$write_ratio" "$preload_enabled" > "$repetition_dir/metadata.txt"
 
     echo "Starting YCSB profile $profile (${write_ratio}% writes) $repetition_name/$repetitions: master, five replicas, and ten clients..."
     srun --nodes=2 --ntasks=16 --ntasks-per-node=8 --cpus-per-task=8 --distribution=cyclic \
@@ -164,6 +192,25 @@ run_repetition() {
         printf '%s replica readiness: %s/5\r' "$repetition_name" "$ready"
         if [[ "$ready" == 5 ]]; then
             printf '\n'
+            if [[ "$preload_enabled" == "true" ]]; then
+                preload_digest=
+                for alias in "${replicas[@]}"; do
+                    replica_log="$repetition_dir/logs/${alias}-replica.log"
+                    digest=$(awk '/PRELOAD_COMPLETE/ { for (field = 1; field <= NF; field++) if ($field ~ /^digest=/) { sub(/^digest=/, "", $field); value = $field } } END { print value }' "$replica_log")
+                    if [[ -z "$digest" ]]; then
+                        echo "Replica $alias did not report a preload digest" >&2
+                        return 1
+                    fi
+                    if [[ -z "$preload_digest" ]]; then
+                        preload_digest=$digest
+                    elif [[ "$digest" != "$preload_digest" ]]; then
+                        echo "Preload digest mismatch: replica $alias reported $digest, expected $preload_digest" >&2
+                        return 1
+                    fi
+                done
+                printf 'preload_digest=%s\n' "$preload_digest" >> "$repetition_dir/metadata.txt"
+                echo "Verified preload digest $preload_digest across five replicas"
+            fi
             touch "$repetition_dir/status/replicas.ready"
             break
         fi
@@ -234,8 +281,9 @@ for index in "${!ycsb_profiles[@]}"; do
         "$run_dir/config/cluster.conf" > "$profile_dir/config/cluster.conf"
     cp "$run_dir/config/latency.conf" "$profile_dir/config/latency.conf"
     cp "$run_dir/config/quorum.conf" "$profile_dir/config/quorum.conf"
-    printf 'ycsb_profile=%s\nread_ratio_percent=%s\nwrite_ratio_percent=%s\nrepetitions=%s\n' \
-        "$profile" "$read_ratio" "$write_ratio" "$repetitions" > "$profile_dir/metadata.txt"
+    printf 'ycsb_profile=%s\nread_ratio_percent=%s\nwrite_ratio_percent=%s\nrepetitions=%s\npreload_enabled=%s\npreload_records=%s\npreload_value_size=%s\npreload_seed=%s\n' \
+        "$profile" "$read_ratio" "$write_ratio" "$repetitions" "$preload_enabled" \
+        "$preload_records" "$preload_value_size" "$preload_seed" > "$profile_dir/metadata.txt"
 
     for repetition in $(seq 1 "$repetitions"); do
         run_repetition "$profile_dir" "$repetition" "$profile" "$write_ratio"

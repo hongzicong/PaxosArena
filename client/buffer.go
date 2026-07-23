@@ -116,6 +116,7 @@ type scheduledRequest struct {
 type requestTiming struct {
 	sentAt   time.Time
 	measured bool
+	write    bool
 }
 
 func (c *BufferClient) loopOpen(getKey func() int64, val []byte) {
@@ -148,8 +149,12 @@ func (c *BufferClient) loopOpen(getKey func() int64, val []byte) {
 				if timing.measured {
 					d := reply.Time.Sub(timing.sentAt)
 					milliseconds := float64(d.Nanoseconds()) / float64(time.Millisecond)
+					operation := "READ"
+					if timing.write {
+						operation = "UPDATE"
+					}
 					c.Println("Returning:", reply.Val.String())
-					c.Printf("latency %v\n", milliseconds)
+					c.Printf("latency %s %v\n", operation, milliseconds)
 				}
 				replies.Done()
 			case <-stopReplies:
@@ -167,6 +172,7 @@ func (c *BufferClient) loopOpen(getKey func() int64, val []byte) {
 			timings.Store(sequence, requestTiming{
 				sentAt:   sentAt,
 				measured: request.measured,
+				write:    request.write,
 			})
 			replies.Add(1)
 			c.sendScheduledRequest(request, val)

@@ -152,8 +152,8 @@ YCSB read/write ratio profiles:
 | C | 100% | 0% | READ to GET |
 
 These are ratio-only profiles rather than complete YCSB semantics. In
-particular, they use ConsensusArena's blob values and do not include a separate
-YCSB data-loading phase.
+particular, they use ConsensusArena's blob values instead of field-oriented
+records.
 
 Every profile runs three repetitions. Each repetition generates warm-up traffic
 for 10 seconds without recording latency, records requests generated during the
@@ -252,11 +252,11 @@ Important output paths:
 
 | Path | Contents |
 | --- | --- |
-| `summary.csv` | Combined averages and sample standard deviations, keyed by `YCSBProfile`, `ReadRatioPercent`, and `WriteRatioPercent`. |
-| `repetition-summaries.csv` | Combined per-repetition rows, keyed by YCSB profile and read/write ratio. |
-| `ycsb-X/summary.csv` | Three-run averages and sample standard deviations for profile `X`. |
-| `ycsb-X/repetition-summaries.csv` | All per-repetition rows for profile `X`. |
-| `ycsb-X/repetition-XX/results/summary.csv` | Per-region and overall latency statistics for one repetition. |
+| `summary.csv` | Combined averages and sample standard deviations, keyed by YCSB profile, read/write ratio, region, and operation. |
+| `repetition-summaries.csv` | Combined per-repetition rows with separate `READ`, `UPDATE`, and `ALL` operation values. |
+| `ycsb-X/summary.csv` | Three-run per-region, per-operation averages and sample standard deviations for profile `X`. |
+| `ycsb-X/repetition-summaries.csv` | All per-repetition, per-operation rows for profile `X`. |
+| `ycsb-X/repetition-XX/results/summary.csv` | Per-region READ, UPDATE, and ALL latency statistics for one repetition. |
 | `ycsb-X/repetition-XX/results/` | Raw measured client latency logs; warm-up latency is excluded. |
 | `ycsb-X/repetition-XX/stdout/` | Master, replica, and client process output. |
 | `ycsb-X/repetition-XX/logs/` | Application logs. |

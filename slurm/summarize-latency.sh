@@ -27,13 +27,14 @@ percentile() {
 
 write_row() {
     local region=$1
-    local raw_file=$2
+    local operation=$2
+    local raw_file=$3
     local sorted_file="$raw_file.sorted"
     local count mean minimum maximum median p95 p99
     sort -n "$raw_file" > "$sorted_file"
     count=$(wc -l < "$sorted_file" | tr -d ' ')
     if [[ "$count" == 0 ]]; then
-        echo "No latency samples found for $region" >&2
+        echo "No $operation latency samples found for $region" >&2
         exit 1
     fi
     read -r mean minimum maximum < <(
@@ -42,12 +43,14 @@ write_row() {
     median=$(percentile "$sorted_file" "$count" 0.50)
     p95=$(percentile "$sorted_file" "$count" 0.95)
     p99=$(percentile "$sorted_file" "$count" 0.99)
-    printf '%s,%s,%s,%s,%s,%s,%s,%s\n' \
-        "$region" "$count" "$mean" "$median" "$p95" "$p99" "$minimum" "$maximum" >> "$summary"
+    printf '%s,%s,%s,%s,%s,%s,%s,%s,%s\n' \
+        "$region" "$operation" "$count" "$mean" "$median" "$p95" "$p99" "$minimum" "$maximum" >> "$summary"
 }
 
-printf 'Region,Count,MeanMs,MedianMs,P95Ms,P99Ms,MinMs,MaxMs\n' > "$summary"
-: > "$raw_dir/overall"
+printf 'Region,Operation,Count,MeanMs,MedianMs,P95Ms,P99Ms,MinMs,MaxMs\n' > "$summary"
+: > "$raw_dir/overall-READ"
+: > "$raw_dir/overall-UPDATE"
+: > "$raw_dir/overall-ALL"
 shopt -s nullglob
 for region in "${regions[@]}"; do
     files=("$results_dir/${region}-client-"*)
@@ -55,11 +58,34 @@ for region in "${regions[@]}"; do
         echo "Expected $expected_files client log files for $region but found ${#files[@]}" >&2
         exit 1
     fi
-    awk '/latency / { print $NF }' "${files[@]}" > "$raw_dir/$region"
-    cat "$raw_dir/$region" >> "$raw_dir/overall"
-    write_row "$region" "$raw_dir/$region"
+    read_raw="$raw_dir/$region-READ"
+    update_raw="$raw_dir/$region-UPDATE"
+    all_raw="$raw_dir/$region-ALL"
+    : > "$read_raw"
+    : > "$update_raw"
+    awk -v read_file="$read_raw" -v update_file="$update_raw" '
+        /latency / && $(NF - 1) == "READ" { print $NF >> read_file }
+        /latency / && $(NF - 1) == "UPDATE" { print $NF >> update_file }
+    ' "${files[@]}"
+    cat "$read_raw" "$update_raw" > "$all_raw"
+    cat "$read_raw" >> "$raw_dir/overall-READ"
+    cat "$update_raw" >> "$raw_dir/overall-UPDATE"
+    cat "$all_raw" >> "$raw_dir/overall-ALL"
+    if [[ -s "$read_raw" ]]; then
+        write_row "$region" READ "$read_raw"
+    fi
+    if [[ -s "$update_raw" ]]; then
+        write_row "$region" UPDATE "$update_raw"
+    fi
+    write_row "$region" ALL "$all_raw"
 done
-write_row OVERALL "$raw_dir/overall"
+if [[ -s "$raw_dir/overall-READ" ]]; then
+    write_row OVERALL READ "$raw_dir/overall-READ"
+fi
+if [[ -s "$raw_dir/overall-UPDATE" ]]; then
+    write_row OVERALL UPDATE "$raw_dir/overall-UPDATE"
+fi
+write_row OVERALL ALL "$raw_dir/overall-ALL"
 
 cat "$summary"
 printf 'Latency summary: %s\n' "$summary"
